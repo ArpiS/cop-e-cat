@@ -42,7 +42,7 @@ def q(query: str, schema_name: str, save_name: Any=None) -> Optional[DataFrame]:
         Optional[DataFrame]: If save_name is unset, the result of pandas exectuting the query will
             be returned as a DataFrame. Otherwise, value is pickled to file.
     """
-    con = psycopg2.connect(dbname=dbname, user=sqluser, password=sqlpwd, host='db2-sn17')
+    con = psycopg2.connect(dbname='mimiciv', user='postgres', password='mimicgcp', host='127.0.0.1', port=5432)
     cur = con.cursor()
     cur.execute('SET search_path to ' + schema_name)
     if save_name is not None:

@@ -41,7 +41,7 @@ def gather_cohort(
     # Filter for adults with icustay length between 1 and 8 days
     if regenerate:
         query = (
-            "select subject_id, stay_id, hadm_id, intime, outtime, los from icustays where los > "
+            "select subject_id, stay_id, hadm_id, intime, outtime, los from mimiciv_icu.icustays where los > "
             + str(min_los)
             + " and los <= "
             + str(max_los)
