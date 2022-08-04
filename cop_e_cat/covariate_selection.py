@@ -52,10 +52,10 @@ def gather_cohort(
         if adults:
             print_per_verbose(1, "Filtering for age >= 18 years")
             # Filter for patients greater than 18 years old
-            query = "select subject_id, gender, anchor_age from patients where anchor_age >= 18;"
+            query = "select subject_id, gender, anchor_age from mimiciv_hosp.patients where anchor_age >= 18;"
             ages = pipeline_config.q(query, "mimic_core")
         else:
-            query = "select subject_id, gender, anchor_age from patients;"
+            query = "select subject_id, gender, anchor_age from mimiciv_hosp.patients;"
             ages = pipeline_config.q(query, "mimic_core")
         # Admissions + Age information
         admissions = pd.merge(adm, ages, on=["subject_id"])
@@ -63,14 +63,14 @@ def gather_cohort(
         if patient_weight:
             print_per_verbose(1, "Adding information about patientweight")
             # Add patient weight information
-            query = "select stay_id, hadm_id, patientweight from procedureevents;"
+            query = "select stay_id, hadm_id, patientweight from mimiciv_icu.procedureevents;"
             weights = pipeline_config.q(query, "mimic_icu")
             admissions = pd.merge(admissions, weights, on=["hadm_id"]).drop_duplicates()
 
         if len(icd_diagnoses) > 0:
             print_per_verbose(1, "Filtering for ICD diagnoses")
             query = (
-                "select hadm_id, icd_code, icd_version from diagnoses_icd where icd_code in "
+                "select hadm_id, icd_code, icd_version from mimiciv_hosp.diagnoses_icd where icd_code in "
                 + str(tuple(icd_diagnoses))
             )
             diagnoses = pipeline_config.q(query, "mimic_hosp")
@@ -130,7 +130,7 @@ def gather_labs(
 
         print_per_verbose(1, "Gathering labs")
         query = (
-            "select stay_id, hadm_id, charttime, itemid, valuenum, valueuom from chartevents where itemid in "
+            "select stay_id, hadm_id, charttime, itemid, valuenum, valueuom from mimiciv_icu.chartevents where itemid in "
             + str(tuple(labs_itemids))
             + " and valuenum >= 0 and valuenum < 99999"
         )
@@ -178,7 +178,7 @@ def gather_meds(meds_dict: Dict[str, List[int]], regenerate: bool = True) -> Dat
 
         print_per_verbose(1, "Gathering meds")
         query = (
-            "SELECT subject_id, hadm_id, stay_id, starttime, endtime, storetime, itemid, amount, amountuom, rate, rateuom FROM inputevents WHERE itemid in "
+            "SELECT subject_id, hadm_id, stay_id, starttime, endtime, storetime, itemid, amount, amountuom, rate, rateuom FROM mimiciv_icu.inputevents WHERE itemid in "
             + str(tuple(meds_ids))
             + " and amount > 0 and amount < 9999"
         )
@@ -211,7 +211,7 @@ def gather_vitals(
             vitals_itemids.extend(itemid)
 
         query = (
-            "SELECT subject_id, hadm_id, stay_id, charttime, storetime, itemid, value, valuenum, valueuom, warning FROM chartevents"
+            "SELECT subject_id, hadm_id, stay_id, charttime, storetime, itemid, value, valuenum, valueuom, warning FROM mimiciv_icu.chartevents"
             + " WHERE itemid in "
             + str(tuple(vitals_itemids))
             + " and valuenum >= 0 and valuenum < 9999"
@@ -264,7 +264,7 @@ def gather_outputs(output_dict: Dict[str, List[int]], regenerate: bool = True) -
 
         print_per_verbose(1, "Gathering outputs")
         query = (
-            "select hadm_id, charttime, itemid, value, valueuom from outputevents where itemid in "
+            "select hadm_id, charttime, itemid, value, valueuom from mimiciv_icu.outputevents where itemid in "
             + str(tuple(output_itemids))
             + " and value >= 0 and value < 99999"
         )
@@ -294,7 +294,7 @@ def gather_procedures(
 
     def vent_icu(vent_itemids):
         query = (
-            "SELECT subject_id, hadm_id, stay_id, starttime, endtime, itemid, amount, amountuom, rate, rateuom, totalamount FROM inputevents WHERE itemid in "
+            "SELECT subject_id, hadm_id, stay_id, starttime, endtime, itemid, amount, amountuom, rate, rateuom, totalamount FROM mimiciv_icu.inputevents WHERE itemid in "
             + str(tuple(vent_itemids))
             + " and amount > 0 and amount < 9999"
         )
@@ -303,7 +303,7 @@ def gather_procedures(
     
     def procs_icu(procs_itemids):
         query = (
-            "SELECT subject_id, stay_id, hadm_id, itemid, starttime, value, valueuom FROM procedureevents WHERE itemid="
+            "SELECT subject_id, stay_id, hadm_id, itemid, starttime, value, valueuom FROM mimiciv_icu.procedureevents WHERE itemid="
             + str(procs_itemids)
             + " and value >=0"
         )
@@ -346,12 +346,12 @@ def gather_comorbidities(comorbidities_dict):
         comorb_strings += names
 
     query = (
-        "select icd_code, icd_version, long_title from d_icd_diagnoses where long_title in "
+        "select icd_code, icd_version, long_title from mimiciv_hosp.d_icd_diagnoses where long_title in "
         + str(tuple(comorb_strings))
     )
     comorbs = pipeline_config.q(query, "mimic_hosp")
 
-    query = "select hadm_id, icd_code, icd_version from diagnoses_icd"
+    query = "select hadm_id, icd_code, icd_version from mimiciv_hosp.diagnoses_icd"
     diags = pipeline_config.q(query, "mimic_hosp")
 
     all_diags = pd.merge(comorbs, diags, on=["icd_code", "icd_version"], how="inner")
